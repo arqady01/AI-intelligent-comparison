@@ -2,10 +2,12 @@
 AI工具智商对比
 
 ```cpp
+std::mutex mtx; //不放到类内，是因为静态成员函数只能访问静态成员，除非也定义成静态
 class singoton {
 public:
     //ctor为私有导致无法创建对象，static可以保证不创建对象就能调用函数
     static singoton* getPtr() {
+        std::unique_lock<std::mutex> lck(mtx); //自动上下锁
         if (nullptr == sn) sn = new singoton();
         return sn;
     }
@@ -26,11 +28,14 @@ private:
 };
 singoton* singoton::sn = nullptr; //懒汉式
 singoton::CS singoton::cs; //必须初始化，不然程序结束无法析构CS
-int main() {
-    //创建类的唯一对象，相当于 singoton* ptr = new singoton();
+void test() {
+    std::cout << "start\n";
     singoton* ptr = singoton::getPtr();
-    //因为sn不为空，调用getPtr，*sn也会原封不动的传出来
-    singoton* ptr2 = singoton::getPtr();
     ptr->print();
+    std::cout << "end\n";
+}
+int main() {
+    std::thread(test).join();
+    std::thread(test).join();
 }
 ```
